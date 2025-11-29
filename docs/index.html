@@ -1,0 +1,141 @@
+<!DOCTYPE html><html class="default" lang="en" data-base="./"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>tokemon</title><meta name="description" content="Documentation for tokemon"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="assets/style.css"/><link rel="stylesheet" href="assets/highlight.css"/><script defer src="assets/main.js"></script><script async src="assets/icons.js" id="tsd-icons-script"></script><script async src="assets/search.js" id="tsd-search-script"></script><script async src="assets/navigation.js" id="tsd-nav-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => window.app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar"><div class="tsd-toolbar-contents container"><a href="index.html" class="title">tokemon</a><div id="tsd-toolbar-links"></div><button id="tsd-search-trigger" class="tsd-widget" aria-label="Search"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-search"></use></svg></button><dialog id="tsd-search" aria-label="Search"><input role="combobox" id="tsd-search-input" aria-controls="tsd-search-results" aria-autocomplete="list" aria-expanded="true" autocapitalize="off" autocomplete="off" placeholder="Search the docs" maxLength="100"/><ul role="listbox" id="tsd-search-results"></ul><div id="tsd-search-status" aria-live="polite" aria-atomic="true"><div>Preparing search index...</div></div></dialog><a href="#" class="tsd-widget menu" id="tsd-toolbar-menu-trigger" data-toggle="menu" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-menu"></use></svg></a></div></header><div class="container container-main"><div class="col-content"><div class="tsd-page-title"><h1>tokemon</h1></div><div class="tsd-panel tsd-typography"><h1 id="tokemon" class="tsd-anchor-link">tokemon<a href="#tokemon" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h1><p>A Node.js library for reading streamed JSON.</p>
+<p><a href="https://github.com/larswaechter/tokemon/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="GitHub license"></a>
+<img src="https://github.com/larswaechter/tokemon/actions/workflows/tests.yml/badge.svg" alt="Tests">
+<img src="https://github.com/larswaechter/tokemon/actions/workflows/linter.yml/badge.svg" alt="Linter"></p>
+<h2 id="📍-introduction" class="tsd-anchor-link">📍 Introduction<a href="#📍-introduction" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><p>tokemon is an open source Node.js library written in TypeScript for extracting fields from streamed JSON.</p>
+<p>When working with LLMs, a common use case is having them respond with JSON, which is then processed in a subsequent step. This is straightforward when the LLM returns its response all at once. However, <a href="https://docs.ollama.com/capabilities/streaming#javascript">streamed responses</a> make things more challenging. Because streamed JSON arrives token-by-token, it remains incomplete and invalid until the stream finishes - so calling <code>JSON.parse()</code> isn’t an option. You may still need a way to extract certrain fields from the JSON stream, even before it is fully complete.</p>
+<p>In scenarios where responde times are a driving factor, such as chatbots, you want to deliver answers to the client as quickly as possible. That’s where tokemon comes in. It lets you extract specific fields from tokenwise streamed JSON, enabling you to process data early and, for example, stream relevant values back to the client while the LLM is still generating its remaining output tokens.</p>
+<blockquote>
+<p>Note: tokemon can only extract fields that exist at the top level of the streamed JSON. It cannot correctly extract fields nested inside child objects.</p>
+</blockquote>
+<h2 id="📦-installation" class="tsd-anchor-link">📦 Installation<a href="#📦-installation" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><p>Install via npm:</p>
+<pre><code class="bash"><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">i</span><span class="hl-1"> </span><span class="hl-3">--save</span><span class="hl-1"> </span><span class="hl-2">tokemon</span>
+</code><button type="button">Copy</button></pre>
+
+<h2 id="🔨-usage" class="tsd-anchor-link">🔨 Usage<a href="#🔨-usage" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><p>tokemon can be easily integrated with common LLM libraries such as Ollama, OpenAI, and Gemini. All you have to do is pass the async iterator returned by the LLM to an extractor's <code>extract()</code> method and provide a mapper function that converts the LLM's response to a <code>string</code>.</p>
+<p>The following example shows how to use tokemon with <a href="https://www.npmjs.com/package/ollama">Ollama</a>.</p>
+<pre><code class="ts"><span class="hl-4">import</span><span class="hl-1"> </span><span class="hl-5">ollama</span><span class="hl-1">, { </span><span class="hl-4">type</span><span class="hl-1"> </span><span class="hl-5">ChatResponse</span><span class="hl-1"> } </span><span class="hl-4">from</span><span class="hl-1"> </span><span class="hl-2">&#39;ollama&#39;</span><span class="hl-1">;</span><br/><span class="hl-4">import</span><span class="hl-1"> { </span><span class="hl-5">StringExtractor</span><span class="hl-1"> } </span><span class="hl-4">from</span><span class="hl-1"> </span><span class="hl-2">&#39;tokemon&#39;</span><span class="hl-1">;</span><br/><br/><span class="hl-3">const</span><span class="hl-1"> </span><span class="hl-6">response</span><span class="hl-1"> = </span><span class="hl-4">await</span><span class="hl-1"> </span><span class="hl-5">ollama</span><span class="hl-1">.</span><span class="hl-0">chat</span><span class="hl-1">({</span><br/><span class="hl-1">  </span><span class="hl-5">model:</span><span class="hl-1"> </span><span class="hl-2">&#39;llama3.1&#39;</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-5">messages:</span><span class="hl-1"> [</span><br/><span class="hl-1">    {</span><br/><span class="hl-1">      </span><span class="hl-5">role:</span><span class="hl-1"> </span><span class="hl-2">&#39;system&#39;</span><span class="hl-1">,</span><br/><span class="hl-1">      </span><span class="hl-5">content:</span><span class="hl-1"> </span><span class="hl-2">`</span><br/><span class="hl-2">      You are a question / answer bot.</span><br/><span class="hl-2">      Your task is to answer the given question in max. 3 sentences and identify an appropriate topic. Respond in JSON format like this:</span><br/><span class="hl-2">      {</span><br/><span class="hl-2">        &quot;answer&quot;: &quot;&lt;answer&gt;&quot;,</span><br/><span class="hl-2">        &quot;topic&quot;: &quot;&lt;topic&gt;&quot;</span><br/><span class="hl-2">      }</span><br/><span class="hl-2">      `</span><br/><span class="hl-1">    },</span><br/><span class="hl-1">    { </span><span class="hl-5">role:</span><span class="hl-1"> </span><span class="hl-2">&#39;user&#39;</span><span class="hl-1">, </span><span class="hl-5">content:</span><span class="hl-1"> </span><span class="hl-2">&#39;How does an LLM work?&#39;</span><span class="hl-1"> }</span><br/><span class="hl-1">  ],</span><br/><span class="hl-1">  </span><span class="hl-5">stream:</span><span class="hl-1"> </span><span class="hl-3">true</span><span class="hl-1">, </span><span class="hl-7">// Enable streaming</span><br/><span class="hl-1">  </span><span class="hl-5">format:</span><span class="hl-1"> {</span><br/><span class="hl-1">    </span><span class="hl-5">type:</span><span class="hl-1"> </span><span class="hl-2">&#39;object&#39;</span><span class="hl-1">,</span><br/><span class="hl-1">    </span><span class="hl-5">properties:</span><span class="hl-1"> {</span><br/><span class="hl-1">      </span><span class="hl-5">answer:</span><span class="hl-1"> { </span><span class="hl-5">type:</span><span class="hl-1"> </span><span class="hl-2">&#39;string&#39;</span><span class="hl-1"> },</span><br/><span class="hl-1">      </span><span class="hl-5">topic:</span><span class="hl-1"> { </span><span class="hl-5">type:</span><span class="hl-1"> </span><span class="hl-2">&#39;string&#39;</span><span class="hl-1"> }</span><br/><span class="hl-1">    }</span><br/><span class="hl-1">  }</span><br/><span class="hl-1">});</span><br/><br/><span class="hl-3">const</span><span class="hl-1"> </span><span class="hl-6">asyncIter</span><span class="hl-1"> = </span><span class="hl-5">response</span><span class="hl-1">[</span><span class="hl-5">Symbol</span><span class="hl-1">.</span><span class="hl-5">asyncIterator</span><span class="hl-1">]();</span><br/><br/><span class="hl-7">// Extract &#39;answer&#39; field</span><br/><span class="hl-3">const</span><span class="hl-1"> </span><span class="hl-6">extractor</span><span class="hl-1"> = </span><span class="hl-3">new</span><span class="hl-1"> </span><span class="hl-0">StringExtractor</span><span class="hl-1">(</span><span class="hl-2">&#39;answer&#39;</span><span class="hl-1">);</span><br/><br/><span class="hl-7">// Mapper to convert ChatResponse to string</span><br/><span class="hl-3">const</span><span class="hl-1"> </span><span class="hl-0">mapper</span><span class="hl-1"> = (</span><span class="hl-5">res</span><span class="hl-1">: </span><span class="hl-8">ChatResponse</span><span class="hl-1">): </span><span class="hl-8">string</span><span class="hl-1"> </span><span class="hl-3">=&gt;</span><span class="hl-1"> </span><span class="hl-5">res</span><span class="hl-1">.</span><span class="hl-5">message</span><span class="hl-1">.</span><span class="hl-5">content</span><span class="hl-1">;</span><br/><br/><span class="hl-4">for</span><span class="hl-1"> </span><span class="hl-4">await</span><span class="hl-1"> (</span><span class="hl-3">const</span><span class="hl-1"> </span><span class="hl-6">token</span><span class="hl-1"> </span><span class="hl-3">of</span><span class="hl-1"> </span><span class="hl-5">extractor</span><span class="hl-1">.</span><span class="hl-0">extract</span><span class="hl-1">(</span><span class="hl-5">asyncIter</span><span class="hl-1">, </span><span class="hl-5">mapper</span><span class="hl-1">)) {</span><br/><span class="hl-1">  </span><span class="hl-5">process</span><span class="hl-1">.</span><span class="hl-5">stdout</span><span class="hl-1">.</span><span class="hl-0">write</span><span class="hl-1">(</span><span class="hl-5">token</span><span class="hl-1">);</span><br/><span class="hl-1">}</span>
+</code><button type="button">Copy</button></pre>
+
+<p>The <code>extract</code> method yields every new token of the target field returned by the LLM. So in this example the value of the field <code>answer</code> is written tokenwise to the console as soon as it is part of the LLM's response.</p>
+<p>Of course, you're not limited to JSON generated by an LLM. All you need is an async iterator that yields JSON tokens.</p>
+<blockquote>
+<p>You can find more examples <a href="https://github.com/larswaechter/tokemon/blob/main/EXAMPLES.md">here</a>.</p>
+</blockquote>
+<h2 id="📄-api" class="tsd-anchor-link">📄 API<a href="#📄-api" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><p>The following provides an overview of tokemon's API. The core components are its extractors. All extractors extend the <code>BaseExtractor</code> class, which provides shared properties and methods.</p>
+<blockquote>
+<p>You can find the TypeDoc documentation <a href="https://larswaechter.github.io/tokemon/">here</a>.</p>
+</blockquote>
+<h3 id="baseextractor" class="tsd-anchor-link">BaseExtractor<a href="#baseextractor" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><h4 id="properties" class="tsd-anchor-link">Properties<a href="#properties" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h4><table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+<th>Type</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>buffer</td>
+<td>Property containing the streamed JSON code</td>
+<td><code>string</code></td>
+<td><code>''</code></td>
+</tr>
+</tbody>
+</table>
+<h4 id="methods" class="tsd-anchor-link">Methods<a href="#methods" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h4><pre><code class="ts"><span class="hl-5">extractor</span><span class="hl-1">.</span><span class="hl-0">extract</span><span class="hl-1">(</span><span class="hl-5">iter</span><span class="hl-1">, </span><span class="hl-5">mapper</span><span class="hl-1">);</span>
+</code><button type="button">Copy</button></pre>
+
+<ul>
+<li>Parameters:
+<ul>
+<li><code>iter</code>:
+<ul>
+<li>Type <code>AsyncIterator&lt;T&gt;</code></li>
+<li>The async iterator of the LLM stream</li>
+</ul>
+</li>
+<li><code>mapper</code>
+<ul>
+<li>Type <code>(value: T, index: number) =&gt; string</code></li>
+<li>The mapper function that converts the LLM message to <code>string</code></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Returns an <code>AsyncIterable&lt;string&gt;</code> including the extracted tokens</li>
+</ul>
+<h4 id="events" class="tsd-anchor-link">Events<a href="#events" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h4><p>The <code>BaseExtractor</code> class, in turn, extends the <code>EventEmitter</code> class, allowing it to emit events that you can subscribe to.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>FIELD_COMPLETED</code></td>
+<td>Emitted when the target field is completed</td>
+</tr>
+</tbody>
+</table>
+<h3 id="stringextractor" class="tsd-anchor-link">StringExtractor<a href="#stringextractor" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><h4 id="properties-1" class="tsd-anchor-link">Properties<a href="#properties-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h4><table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+<th>Type</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>value</td>
+<td>Property containing the value of target field</td>
+<td><code>string | undefined</code></td>
+<td><code>undefined</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="numberextractor" class="tsd-anchor-link">NumberExtractor<a href="#numberextractor" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><h4 id="properties-2" class="tsd-anchor-link">Properties<a href="#properties-2" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h4><table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+<th>Type</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>value</td>
+<td>Property containing the value of target field</td>
+<td><code>number | undefined</code></td>
+<td><code>undefined</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="booleanextractor" class="tsd-anchor-link">BooleanExtractor<a href="#booleanextractor" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><h4 id="properties-3" class="tsd-anchor-link">Properties<a href="#properties-3" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h4><table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+<th>Type</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>value</td>
+<td>Property containing the value of target field</td>
+<td><code>boolean | undefined</code></td>
+<td><code>undefined</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="🧩-contributing" class="tsd-anchor-link">🧩 Contributing<a href="#🧩-contributing" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><p>Any contribution is appreciated! See <a href="https://github.com/larswaechter/tokemon/blob/main/CONTRIBUTING.md">CONTRIBUTING.md</a></p>
+<p><a href='https://ko-fi.com/larswaechter' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi3.png?v=6' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a></p>
+<h2 id="🔑-license" class="tsd-anchor-link">🔑 License<a href="#🔑-license" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><p>tokemon is released under <a href="https://github.com/larswaechter/tokemon/blob/main/LICENSE">MIT</a> license.</p>
+</div></div><div class="col-sidebar"><div class="page-menu"><div class="tsd-navigation settings"><details class="tsd-accordion"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-chevronDown"></use></svg><h3>Settings</h3></summary><div class="tsd-accordion-details"><div class="tsd-filter-visibility"><span class="settings-label">Member Visibility</span><ul id="tsd-filter-options"><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-protected" name="protected"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Protected</span></label></li><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-inherited" name="inherited" checked/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Inherited</span></label></li><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-external" name="external"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>External</span></label></li></ul></div><div class="tsd-theme-toggle"><label class="settings-label" for="tsd-theme">Theme</label><select id="tsd-theme"><option value="os">OS</option><option value="light">Light</option><option value="dark">Dark</option></select></div></div></details></div><details open class="tsd-accordion tsd-page-navigation"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-chevronDown"></use></svg><h3>On This Page</h3></summary><div class="tsd-accordion-details"><a href="#tokemon"><span>tokemon</span></a><ul><li><a href="#📍-introduction"><span>📍 <wbr/>Introduction</span></a></li><li><a href="#📦-installation"><span>📦 <wbr/>Installation</span></a></li><li><a href="#🔨-usage"><span>🔨 <wbr/>Usage</span></a></li><li><a href="#📄-api"><span>📄 <wbr/>API</span></a></li><li><ul><li><a href="#baseextractor"><span>Base<wbr/>Extractor</span></a></li><li><ul><li><a href="#properties"><span>Properties</span></a></li><li><a href="#methods"><span>Methods</span></a></li><li><a href="#events"><span>Events</span></a></li></ul></li><li><a href="#stringextractor"><span>String<wbr/>Extractor</span></a></li><li><ul><li><a href="#properties-1"><span>Properties</span></a></li></ul></li><li><a href="#numberextractor"><span>Number<wbr/>Extractor</span></a></li><li><ul><li><a href="#properties-2"><span>Properties</span></a></li></ul></li><li><a href="#booleanextractor"><span>Boolean<wbr/>Extractor</span></a></li><li><ul><li><a href="#properties-3"><span>Properties</span></a></li></ul></li></ul></li><li><a href="#🧩-contributing"><span>🧩 <wbr/>Contributing</span></a></li><li><a href="#🔑-license"><span>🔑 <wbr/>License</span></a></li></ul></div></details></div><div class="site-menu"><nav class="tsd-navigation"><a href="modules.html">tokemon</a><ul class="tsd-small-nested-navigation" id="tsd-nav-container"><li>Loading...</li></ul></nav></div></div></div><footer><p class="tsd-generator">Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p></footer><div class="overlay"></div></body></html>
