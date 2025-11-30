@@ -2,6 +2,7 @@
 
 A Node.js library for reading streamed JSON.
 
+[![npm version](https://img.shields.io/npm/v/tokemon.svg?style=flat)](https://www.npmjs.com/package/tokemon/)
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/larswaechter/tokemon/blob/main/LICENSE)
 ![Tests](https://github.com/larswaechter/tokemon/actions/workflows/tests.yml/badge.svg)
 ![Linter](https://github.com/larswaechter/tokemon/actions/workflows/linter.yml/badge.svg)
