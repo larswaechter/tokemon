@@ -27,5 +27,6 @@
     /* AND if you're building for a library in a monorepo: */
     "declarationMap": true
   },
-  "include": ["./src"]
+  "include": ["./src"],
+  "exclude": ["./src/*.spec.ts"]
 }

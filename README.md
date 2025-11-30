@@ -42,7 +42,8 @@ const response = await ollama.chat({
       role: 'system',
       content: `
       You are a question / answer bot.
-      Your task is to answer the given question in max. 3 sentences and identify an appropriate topic. Respond in JSON format like this:
+      Your task is to answer the given question in max. 3 sentences and identify an appropriate topic.
+      Respond in JSON format like this:
       {
         "answer": "<answer>",
         "topic": "<topic>"

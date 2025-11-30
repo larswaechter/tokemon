@@ -37,7 +37,8 @@
     "vitest": "^4.0.14"
   },
   "files": [
-    "/dist"
+    "dist/**/*.js",
+    "dist/**/*.d.ts"
   ],
   "keywords": [
     "json",
